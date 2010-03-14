@@ -6,11 +6,15 @@
 
 Name:           lxc-management-tools
 Version:        1.0.0
-Release:        1
+Release:        2
 Summary:        Lxc Management Tools
 Group:          System/Management
 AutoReqProv:    on
 License:        LGPL v2.1 only
+URL:		http://github.com/llange/LXC-Management-Tools/
+Packager:	Ludovic LANGE
+Vendor:		eTour
+Distribution:	Fedora / Redhat
 Source0:        lxc
 Source1:        lxc-shutdown-agent
 Source3:        lxc-shutdown-all
