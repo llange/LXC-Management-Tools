@@ -1,0 +1,159 @@
+#! /bin/sh
+#
+# lxc:       Starts all LXC containers
+#
+# chkconfig: 345 24 02
+# description: 
+# processname: lxc-start
+# config:
+# See: http://lxc.teegra.net/ for the original idea
+# See : http://blog.flameeyes.eu/2009/08/08/linux-containers-and-the-init-scripts-problem for the auto stopping
+
+# Source function library.
+. /etc/init.d/functions
+. /etc/sysconfig/network
+
+LOCKFILE=/var/lock/subsys/lxc
+TOOLS_PREFIX=/usr/bin
+
+[ ! -f /etc/lxc.conf ] && exit 1
+[ -f /etc/lxc.conf ] && source /etc/lxc.conf
+
+base=${0##*/}
+
+start() {
+    # Check that networking is configured.
+    [ ${NETWORKING} = "no" ] && exit 1
+
+	echo $"Starting LXC containers... "
+
+	for container in "${CONTAINERS[@]}"; do
+		if [ "${container}" = "${container#!}" ]; then
+			echo -n $"Starting Linux container: "
+			echo -n ${container}
+			/usr/bin/screen -dmS init-${container} /usr/bin/lxc-start -n ${container}
+			lxc-wait --name=${container} --state=RUNNING
+			RETVAL=$?
+			if [ $RETVAL = 0 ]; then
+				nohup ${TOOLS_PREFIX}/lxc-shutdown-agent ${container} >/dev/null 2>&1 &
+				touch $LOCKFILE
+				success $"$base startup"
+			else
+				failure $"$base startup"
+			fi
+			echo
+		fi
+	done
+
+	return $RETVAL
+}
+
+force_stop() {
+        echc $"Forcing shutting down of LXC containers: "
+
+	for container in "${CONTAINERS[@]}"; do
+		if [ "${container}" = "${container#!}" ]; then
+			echo -n $"Stopping Linux container: "
+			echo -n ${container}
+			/usr/bin/lxc-stop -n ${container}
+			RETVAL=$?
+			[ $RETVAL = 0 ] && success $"$base shutdown" || failure $"$base shutdown"
+			echo
+		fi
+	done
+
+	rm -f $LOCKFILE
+	return $RETVAL
+
+}
+
+stop() {
+        echo $"Shutting down LXC containers: "
+
+	typeset -i PID=0
+	lxc-ps -C init -opid |while read container PID ;do
+		[[ $PID -gt 1 ]] || continue
+		echo -n $"Stopping Linux container: "
+		echo -n ${container}
+		kill -PWR $PID
+		lxc-wait --name=${container} --state=STOPPED
+		RETVAL=$?
+		[ $RETVAL = 0 ] && success $"$base shutdown" || failure $"$base shutdown"
+		echo
+	done
+
+	rm -f $LOCKFILE
+	return $RETVAL
+
+}
+
+restart() {
+	stop
+	start
+}
+
+reload() {
+	restart
+}
+
+force_reload() {
+    restart
+}
+
+rh_status() {
+	echo "Checking for LXC "
+	${TOOLS_PREFIX}/lxc-status-all 2>&1
+	RETVAL=$?
+	echo_success
+	echo
+	return $RETVAL
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+RETVAL=0
+
+# See how we were called.
+case "$1" in
+  start)
+        rh_status_q && exit 0
+        $1
+	;;
+  stop)
+        rh_status_q || exit 0
+        $1
+	;;
+  force-stop)
+        force_stop
+        ;;
+  restart)
+        $1
+        ;;
+  reload)
+        rh_status_q || exit 7
+        $1
+	;;
+  force-reload)
+        force_reload
+        ;;
+  status)
+        rh_status
+        ;;
+  condrestart|try-restart)
+        rh_status_q || exit 0
+        restart
+        ;;
+  condrestart)
+  	if [ -f $LOCKFILE ]; then
+		restart
+	fi
+	;;
+  *)
+        echo $"Usage: $0 {start|stop|force-stop|status|restart|condrestart|try-restart|reload|force-reload}"
+        exit 2
+        ;;
+esac
+
+exit $RETVAL
