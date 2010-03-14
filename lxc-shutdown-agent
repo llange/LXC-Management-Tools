@@ -44,7 +44,7 @@ stop_vm () {
 	lxc-wait -n $VM -s STOPPED
 }
 
-start_vm () { screen -dmS init-$VM lxc-start -f $VM_CFG -n $VM ; }
+start_vm () { screen -dmS init-$VM lxc-start -n $VM ; }
 
 VM_STATE=`lxc-info -n $VM` VM_STATE=${VM_STATE##* }
 [[ "$VM_STATE" = "RUNNING" ]] || abrt "Container \"$VM\" is not running."
