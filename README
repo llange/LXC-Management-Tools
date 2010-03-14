@@ -1,0 +1,25 @@
+A init.d script for stating / (cleanly) stopping LXC containers on Fedora (maybe RedHat, not tested)
+Also, a mechanism to allow a LXC container to shutdown itself.
+
+Credits goes to :
+* LXC Howto : Dwight Schauer <das@teegra.net> http://lxc.teegra.net/
+	/etc/rc.d/init.d/lxc script (originally for Arch Linux, ported to Fedora)
+* Brian K. White - brian@aljex.com
+	OpenSuse scripts for managing LXC containers + mechanism allowing a LXC container to shutdown itself
+
+
+For Fedora LXC Containers, add the following file to "/etc/events.d/":
+
+======================================================= /etc/events.d/lxc =======================================================
+# power-status-changed - External signaling for LXC
+#
+# This task is run whenever the PWR signal is received.
+# Usually used to shut down the machine.
+
+start on power-status-changed
+
+script
+/usr/bin/logger -t LXC "System shutdown requested"
+/sbin/shutdown -h now "Power status changed"
+end script
+========================================================================== =======================================================
