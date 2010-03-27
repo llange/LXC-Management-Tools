@@ -31,11 +31,9 @@ start() {
 		if [ "${container}" = "${container#!}" ]; then
 			echo -n $"Starting Linux container: "
 			echo -n ${container}
-			/usr/bin/screen -dmS init-${container} /usr/bin/lxc-start -n ${container}
-			lxc-wait --name=${container} --state=RUNNING
+			/usr/bin/lxc-start-vm -n ${container}
 			RETVAL=$?
 			if [ $RETVAL = 0 ]; then
-				nohup ${TOOLS_PREFIX}/lxc-shutdown-agent ${container} >/dev/null 2>&1 &
 				touch $LOCKFILE
 				success $"$base startup"
 			else
@@ -75,8 +73,7 @@ stop() {
 		[[ $PID -gt 1 ]] || continue
 		echo -n $"Stopping Linux container: "
 		echo -n ${container}
-		kill -PWR $PID
-		lxc-wait --name=${container} --state=STOPPED
+		/usr/bin/lxc-stop-vm -n ${container}
 		RETVAL=$?
 		[ $RETVAL = 0 ] && success $"$base shutdown" || failure $"$base shutdown"
 		echo

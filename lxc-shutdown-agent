@@ -32,6 +32,7 @@ VM_CFG=${LXC_LIB}/${VM}/config
 abrt () { echo "${self}: $@" ; exit 1 ; }
 
 stop_vm () {
+	/usr/bin/logger -t LXC-AGENT "[${VM}] waiting for processes to end..."
 	# we don' need no steenkeeng `wc -l ...`
 	t=${CGROUP_MOUNT}/${VM}/tasks
 	n=2
@@ -40,11 +41,17 @@ stop_vm () {
 		[[ -s $t ]] || break
 		while read ;do ((n++)) ;done <$t ;inotifywait $t
 	done
+	/usr/bin/logger -t LXC-AGENT "[${VM}] Stopping container."
 	lxc-stop -n $VM
+	/usr/bin/logger -t LXC-AGENT "[${VM}] waiting for container to be stopped."
 	lxc-wait -n $VM -s STOPPED
+	/usr/bin/logger -t LXC-AGENT "[${VM}] container is stopped."
 }
 
-start_vm () { screen -dmS init-$VM lxc-start -n $VM ; }
+start_vm () {
+	/usr/bin/logger -t LXC-AGENT "[${VM}] Starting container."
+	nohup /usr/bin/lxc-start-vm -n $VM -a >/dev/null 2>&1 &
+}
 
 VM_STATE=`lxc-info -n $VM` VM_STATE=${VM_STATE##* }
 [[ "$VM_STATE" = "RUNNING" ]] || abrt "Container \"$VM\" is not running."
@@ -58,10 +65,12 @@ VM_UTMP=${VM_ROOTFS}/var/run/utmp
 sleep 1
 
 while inotifywait -qq $VM_UTMP ; do
-	RUNLEVEL=`runlevel $VM_UTMP`
+	RUNLEVEL=`/sbin/runlevel $VM_UTMP`
+	/usr/bin/logger -t LXC-AGENT "[${VM}] runlevel changed to ${RUNLEVEL}"
 	case "${RUNLEVEL}" in
 		N??) : ;;
 		??0) stop_vm ; break ;;
-		??6) stop_vm ; start_vm ;;
+		??6) stop_vm ; start_vm ; sleep 1;;
 	esac
 done
+/usr/bin/logger -t LXC-AGENT "[${VM}] exit."

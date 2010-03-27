@@ -6,7 +6,7 @@
 
 Name:           lxc-management-tools
 Version:        1.0.0
-Release:        2
+Release:        4
 Summary:        Lxc Management Tools
 Group:          System/Management
 AutoReqProv:    on
@@ -20,6 +20,8 @@ Source1:        lxc-shutdown-agent
 Source3:        lxc-shutdown-all
 Source4:        lxc-status-all
 Source5:	lxc.conf
+Source6:	lxc-start-vm
+Source7:	lxc-stop-vm
 BuildArch:	noarch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Requires:       lxc >= 0.6.3
@@ -47,6 +49,8 @@ install -m 755 -d %{buildroot}%{_bindir}
 install -m 755 %{SOURCE1} %{buildroot}%{_bindir}
 install -m 755 %{SOURCE3} %{buildroot}%{_bindir}
 install -m 755 %{SOURCE4} %{buildroot}%{_bindir}
+install -m 755 %{SOURCE6} %{buildroot}%{_bindir}
+install -m 755 %{SOURCE7} %{buildroot}%{_bindir}
 install -m 755 -d %{buildroot}%{_sysconfdir}
 install -m 755 %{SOURCE5} %{buildroot}%{_sysconfdir}
 mkdir -p -m 755 %{buildroot}%{_initddir}
@@ -66,8 +70,12 @@ install -m 755 %{SOURCE0} %{buildroot}%{_initddir}
 %{_initddir}/lxc
 
 %changelog
+* Sat Mar 27 2010 llange
+- 1.0.0-4 new commands for managing one VM only
 * Sun Mar 14 2010 llange
-- Packaging for Fedora
+- 1.0.0-3 Fix for lxc 0.6.3, need to restart your containers from the host with restart
+* Sun Mar 14 2010 llange
+- 1.0.0-1 Packaging for Fedora
 * Sat Feb 13 2010 brian@aljex.com
 - init scripts to start/stop/status all containers
 - lxc-shutdown-agent container monitor daemon script
